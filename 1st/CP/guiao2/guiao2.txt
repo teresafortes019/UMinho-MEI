@@ -1,0 +1,73 @@
+GUIÃO 2 - 04/10/2022
+
+Exercise 1 - Spacial locality
+
+a) Data locality analysis: Look at the traditional matrix multiplication version (the DOT version, in the
+algorithm/figure above). For each memory access (Cij, Aik and Bkj) identify those that exhibit spatial
+locality (suggestion: start by looking at the DOT definition, eventually also look at the DOT assembly
+code in lab guide 1, exercise 2c).
+
+.L12:
+movsd (%rdx), %xmm0 ;move SD from memory to register %xmm0
+mulsd (%rax), %xmm0 ;move SD from memory and mul with %xmm0
+addq $4096, %rax ; add 4096 to %rax
+addq $8, %rdx
+addsd %xmm0, %xmm1
+movsd %xmm1, (%rcx)
+cmpq %rax, %rsi
+jne .L12
+
+Resposta: 
+Apenas no acesso à memória Aik há localidade espacial, pois os elementos de uma mesma linha estão armazenados contiguamente na memória.
+
+
+b) Estimation of data locality impact: Estimate the number of level 1 cache misses for a NxN matrix,
+assuming that matrix size is greater than the L1 data cache size (suggestion: focus on the matrix accesses
+withoutspatial locality). Fill the table with the estimated valuesfor this base version. How many L1 cache
+misses are expected per instruction executed (with -O2 optimisation)?
+
+Resposta: 
+Matriz A: N*N*N/8
+Matriz B: N^3
+Porquê 8? Um miss na cache -> vai-se buscar 64 bytes (de 8 em 8 doubles) e depois há 7 hits 
+A matriz B origina mais problemas do que a matriz A, pois vai gerar um miss em cada acesso à cache.
+A matriz B está constantemente a ir buscar valores da mem RAM (64 bytes) e só usa 1/8 desses valores (8 bytes).
+
+
+c) Improvement of spatial locality: Design an optimised DOT implementation by transposing matrix A
+and/or B in order to get the best spatial locality. Estimate the number of level 1 cache misses of this
+“transp” version and fill the table with the estimated values (ignore the cost of transposing the matrix).
+
+Resposta: 
+Matriz B transposta 
+    for i
+        for j 
+            B'[i][j] = B[j][i]
+
+Problema de fazer e otimizar a transposta:  complicado de implementar em termos de hierarquia de memória 
+                                            (faz um load e um store -> garantidamente um deles não terá localidade espacial)
+
+A matriz C, que tem escritas em background, tem localidade espacial, porque avança por colunas, ou seja, avança na mesma linha.
+
+d) Measure and discuss the results: Measure the number of L1 data cache misses with perf stat -e
+-M cpi ./a.out. Complete the table for matrix size of 512x512 (always using the -O2
+optimisation level) for the base and for the optimised (i.e., with the transpose) versions. What is the
+explanation for the performance differences between these two versions? Why is the gain not directly
+proportional to the improvement in cache misses?
+
+Resposta: 
+nº de misses da transposta real vai ser metade do estimado
+nº de misses da transposta = 2*N*N*N/8
+
+e) Trocar a ordem de A e B no dot, faz alguma diferença no nº de misses? Não há diferença. 
+ for j 
+    for i 
+
+
+
+Exercise 2 - Temporal locality
+
+a) j+=2 carregar 2 de uma vez 
+
+
+
